@@ -147,7 +147,7 @@ void OutlineShader::Init()
 
 
 
-void OutlineShader::Draw(const Sprite *sprite, const Point &pos, const Point &size, const Color &color, const Point &unit)
+void OutlineShader::Draw(const Sprite *sprite, const Point &pos, const Point &size, const Color &color, const Point &unit, int frame)
 {
 	glUseProgram(shader.Object());
 	//by lusky
@@ -183,9 +183,9 @@ void OutlineShader::Draw(const Sprite *sprite, const Point &pos, const Point &si
 	glUniform2fv(positionI, 1, position);
 
 	glUniform4fv(colorI, 1, color.Get());
-
-	glBindTexture(GL_TEXTURE_2D, sprite->Texture());
-
+	
+	glBindTexture(GL_TEXTURE_2D, sprite->Texture(frame));
+	
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 	//by lusky
