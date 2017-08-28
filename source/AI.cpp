@@ -72,10 +72,10 @@ namespace {
 		return min(a, 360. - a);
 	}
 	
-	static const double MAX_DISTANCE_FROM_CENTER = 10000.;
+	const double MAX_DISTANCE_FROM_CENTER = 10000.;
 	// Constance for the invisible fence timer.
-	static const int FENCE_DECAY = 4;
-	static const int FENCE_MAX = 600;
+	const int FENCE_DECAY = 4;
+	const int FENCE_MAX = 600;
 }
 
 
@@ -551,7 +551,7 @@ void AI::Step(const PlayerInfo &player)
 							parentChoices.emplace_back(other);
 					}
 				}
-				if(!parent && parentChoices.size())
+				if(!parent && !parentChoices.empty())
 				{
 					parent = parentChoices[Random::Int(parentChoices.size())];
 					it->SetParent(parent);
@@ -568,7 +568,7 @@ void AI::Step(const PlayerInfo &player)
 		}
 		bool mustRecall = false;
 		if(it->HasBays() && !(it->IsYours() ? thisIsLaunching : it->Commands().Has(Command::DEPLOY)) && !target)
-			for(const weak_ptr<const Ship> &ptr : it->GetEscorts())
+			for(const weak_ptr<Ship> &ptr : it->GetEscorts())
 			{
 				shared_ptr<const Ship> escort = ptr.lock();
 				if(escort && escort->CanBeCarried() && escort->GetSystem() == it->GetSystem()
@@ -722,7 +722,7 @@ void AI::AskForHelp(Ship &ship, bool &isStranded, const Ship *flagship)
 			canHelp.insert(canHelp.end(), 1 + .3 * helper->MaxVelocity(), helper.get());
 		}
 		
-		if(!hasEnemy && canHelp.size())
+		if(!hasEnemy && !canHelp.empty())
 		{
 			Ship *helper = canHelp[Random::Int(canHelp.size())];
 			helper->SetShipToAssist((&ship)->shared_from_this());
@@ -1151,7 +1151,7 @@ void AI::MoveIndependent(Ship &ship, Command &command) const
 		PrepareForHyperspace(ship, command);
 		bool mustWait = false;
 		if(ship.BaysFree(false) || ship.BaysFree(true))
-			for(const weak_ptr<const Ship> &escort : ship.GetEscorts())
+			for(const weak_ptr<Ship> &escort : ship.GetEscorts())
 			{
 				shared_ptr<const Ship> locked = escort.lock();
 				mustWait |= locked && locked->CanBeCarried() && !locked->IsDisabled();
@@ -1169,7 +1169,7 @@ void AI::MoveIndependent(Ship &ship, Command &command) const
 		else if(ship.Position().Distance(ship.GetTargetStellar()->Position()) < 100.)
 			ship.SetTargetStellar(nullptr);
 	}
-	else if(shouldStay && ship.GetSystem()->Objects().size())
+	else if(shouldStay && !ship.GetSystem()->Objects().empty())
 	{
 		unsigned i = Random::Int(ship.GetSystem()->Objects().size());
 		ship.SetTargetStellar(&ship.GetSystem()->Objects()[i]);
@@ -2257,7 +2257,7 @@ void AI::AutoFire(const Ship &ship, Command &command, bool secondary) const
 	vector<shared_ptr<const Ship>> enemies;
 	if(currentTarget)
 		enemies.push_back(currentTarget);
-	for(auto target : ships)
+	for(const auto &target : ships)
 		if(target->IsTargetable() && gov->IsEnemy(target->GetGovernment())
 				&& !(target->IsHyperspacing() && target->Velocity().Length() > 10.)
 				&& target->GetSystem() == ship.GetSystem()

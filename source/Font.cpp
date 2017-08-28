@@ -25,9 +25,9 @@ PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 using namespace std;
 
 namespace {
-	static bool showUnderlines = false;
-
-	static const char *vertexCode =
+	bool showUnderlines = false;
+	
+	const char *vertexCode =
 		// "scale" maps pixel coordinates to GL coordinates (-1 to 1).
 		"uniform vec2 scale;\n"
 		// The (x, y) coordinates of the top left corner of the glyph.
@@ -36,7 +36,7 @@ namespace {
 		"uniform int glyph;\n"
 		// Aspect ratio of rendered glyph (unity by default).
 		"uniform float aspect = 1.f;\n"
-
+		
 		// Inputs from the VBO.
         //by lusky
 		//"in vec2 vert;\n"
@@ -54,8 +54,8 @@ namespace {
 		"  texCoord = vec2((glyph + corner.x) / 98.f, corner.y);\n"
 		"  gl_Position = vec4((aspect * vert.x + position.x) * scale.x, (vert.y + position.y) * scale.y, 0, 1);\n"
 		"}\n";
-
-	static const char *fragmentCode =
+	
+	const char *fragmentCode =
 		// The user must supply a texture and a color (white by default).
 		"uniform sampler2D tex;\n"
 		"uniform vec4 color = vec4(1, 1, 1, 1);\n"
@@ -77,8 +77,8 @@ namespace {
 		"  gl_FragColor = texture2D(tex, texCoord.xy).a * color;\n"
 
 		"}\n";
-
-	static const int KERN = 2;
+	
+	const int KERN = 2;
 }
 
 
