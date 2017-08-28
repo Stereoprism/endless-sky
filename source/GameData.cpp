@@ -87,6 +87,7 @@ namespace {
 	Set<Government> defaultGovernments;
 	Set<Planet> defaultPlanets;
 	Set<System> defaultSystems;
+	Set<Galaxy> defaultGalaxies;
 	Set<Sale<Ship>> defaultShipSales;
 	Set<Sale<Outfit>> defaultOutfitSales;
 	
@@ -174,15 +175,16 @@ void GameData::BeginLoad(const char * const *argv)
 	UpdateNeighbors();
 	// And, update the ships with the outfits we've now finished loading.
 	for(auto &it : ships)
-		it.second.FinishLoading();
+		it.second.FinishLoading(true);
 	for(const auto &it : persons)
-		it.second.GetShip()->FinishLoading();
+		it.second.GetShip()->FinishLoading(true);
 	
 	// Store the current state, to revert back to later.
 	defaultFleets = fleets;
 	defaultGovernments = governments;
 	defaultPlanets = planets;
 	defaultSystems = systems;
+	defaultGalaxies = galaxies;
 	defaultShipSales = shipSales;
 	defaultOutfitSales = outfitSales;
 	playerGovernment = governments.Get("Escort");
@@ -318,6 +320,7 @@ void GameData::Revert()
 	governments.Revert(defaultGovernments);
 	planets.Revert(defaultPlanets);
 	systems.Revert(defaultSystems);
+	galaxies.Revert(defaultGalaxies);
 	shipSales.Revert(defaultShipSales);
 	outfitSales.Revert(defaultOutfitSales);
 	for(auto &it : persons)

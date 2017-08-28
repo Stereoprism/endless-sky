@@ -97,29 +97,23 @@ int main(int argc, char *argv[])
 #endif
 
 		player.LoadRecent();
-		player.ApplyChanges();
-
+		
 		// Check how big the window can be.
 		SDL_DisplayMode mode;
 		if(SDL_GetCurrentDisplayMode(0, &mode))
 			return DoError("Unable to query monitor resolution!");
-
+		
 		Preferences::Load();
 		Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI;
-		//by Lusky
-		//Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN;
 		bool isFullscreen = Preferences::Has("fullscreen");
 		if(isFullscreen)
 			flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 		else if(Preferences::Has("maximized"))
 			flags |= SDL_WINDOW_MAXIMIZED;
-
+		
 		// Make the window just slightly smaller than the monitor resolution.
 		int maxWidth = mode.w;
 		int maxHeight = mode.h;
-		//by lusky
-		//int maxWidth = 740;
-		//int maxHeight = 580;
 		if(maxWidth < 640 || maxHeight < 480)
 			return DoError("Monitor resolution is too small!");
 
@@ -237,6 +231,8 @@ int main(int argc, char *argv[])
 				"government they belong to. So, all human ships will be the same color, which "
 				"may be confusing. Consider upgrading your graphics driver (or your OS)."));
 		
+		bool showCursor = true;
+		int cursorTime = 0;
 		int frameRate = 60;
 		FrameTimer timer(frameRate);
 		bool isPaused = false;
@@ -249,7 +245,11 @@ int main(int argc, char *argv[])
 			while(SDL_PollEvent(&event))
 			{
 				UI &activeUI = (menuPanels.IsEmpty() ? gamePanels : menuPanels);
-
+				
+				// If the mouse moves, reset the cursor movement timeout.
+				if(event.type == SDL_MOUSEMOTION)
+					cursorTime = 0;
+				
 				// The caps lock key slows the game down (to make it easier to
 				// see and debug things that are happening quickly).
 				if(debugMode && event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_BACKQUOTE)
@@ -297,6 +297,17 @@ int main(int argc, char *argv[])
 			}
 			SDL_Keymod mod = SDL_GetModState();
 			Font::ShowUnderlines(mod & KMOD_ALT);
+			
+			// In fullscreen mode, hide the cursor if inactive for ten seconds,
+			// but only if the player is flying around in the main view.
+			++cursorTime;
+			bool shouldShowCursor = (!isFullscreen || cursorTime < 600 
+				|| !menuPanels.IsEmpty() || gamePanels.Root() != gamePanels.Top());
+			if(shouldShowCursor != showCursor)
+			{
+				showCursor = shouldShowCursor;
+				SDL_ShowCursor(showCursor);
+			}
 			
 			// Tell all the panels to step forward, then draw them.
 			((!isPaused && menuPanels.IsEmpty()) ? gamePanels : menuPanels).StepAll();
@@ -387,7 +398,7 @@ void PrintHelp()
 void PrintVersion()
 {
 	cerr << endl;
-	cerr << "Endless Sky 0.9.7" << endl;
+	cerr << "Endless Sky 0.9.8" << endl;
 	cerr << "License GPLv3+: GNU GPL version 3 or later: <https://gnu.org/licenses/gpl.html>" << endl;
 	cerr << "This is free software: you are free to change and redistribute it." << endl;
 	cerr << "There is NO WARRANTY, to the extent permitted by law." << endl;
@@ -494,6 +505,9 @@ int DoError(string message, SDL_Window *window, SDL_GLContext context)
 
 void Cleanup(SDL_Window *window, SDL_GLContext context)
 {
+	// Make sure the cursor is visible.
+	SDL_ShowCursor(true);
+	
 	// Clean up in the reverse order that everything is launched.
 #ifndef _WIN32
 	// Under windows, this cleanup code causes intermittent crashes.
