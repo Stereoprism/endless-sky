@@ -27,7 +27,7 @@ namespace {
 	GLint blurI;
 	GLint clipI;
 	GLint fadeI;
-	
+
 	GLuint vao;
 	GLuint vbo;
 
@@ -55,10 +55,13 @@ void SpriteShader::Init()
 		"uniform vec2 scale;\n"
 		"uniform vec2 blur;\n"
 		"uniform float clip;\n"
-		
-		"in vec2 vert;\n"
-		"out vec2 fragTexCoord;\n"
-		
+
+		//by lusky
+//		"in vec2 vert;\n"
+//		"out vec2 fragTexCoord;\n"
+		"attribute vec2 vert;\n"
+		"varying vec2 fragTexCoord;\n"
+
 		"void main() {\n"
 		"  vec2 blurOff = 2 * vec2(vert.x * abs(blur.x), vert.y * abs(blur.y));\n"
 		"  gl_Position = vec4((transform * (vert + blurOff) + position) * scale, 0, 1);\n"
@@ -72,17 +75,27 @@ void SpriteShader::Init()
 		"uniform float fade;\n"
 		"uniform vec2 blur;\n"
 		"const int range = 5;\n"
-		
-		"in vec2 fragTexCoord;\n"
-		"out vec4 finalColor;\n"
-		
+
+		//by lusky
+//		"in vec2 fragTexCoord;\n"
+//      "out vec4 finalColor;\n"
+		"varying vec2 fragTexCoord;\n"
+
 		"void main() {\n"
 		"  if(blur.x == 0 && blur.y == 0)\n"
 		"  {\n"
 		"    if(fade != 0)\n"
-		"     finalColor = mix(texture(tex0, fragTexCoord), texture(tex1, fragTexCoord), fade);\n"
+
+		//by lusky
+//		"     finalColor = mix(texture(tex0, fragTexCoord), texture(tex1, fragTexCoord), fade);\n"
+		"     gl_FragColor = mix(texture2D(tex0, fragTexCoord), texture2D(tex1, fragTexCoord), fade);\n"
+
 		"    else\n"
-		"      finalColor = texture(tex0, fragTexCoord);\n"
+
+		//by lusky
+//		"      finalColor = texture(tex0, fragTexCoord);\n"
+		"      gl_FragColor = texture2D(tex0, fragTexCoord);\n"
+
 		"    return;\n"
 		"  }\n"
 		"  const float divisor = range * (range + 2) + 1;\n"
@@ -92,13 +105,25 @@ void SpriteShader::Init()
 		"    float scale = (range + 1 - abs(i)) / divisor;\n"
 		"    vec2 coord = fragTexCoord + (blur * i) / range;\n"
 		"    if(fade != 0)\n"
-		"      color += scale * mix(texture(tex0, coord), texture(tex1, coord), fade);\n"
+
+		//by lusky
+//		"      color += scale * mix(texture(tex0, coord), texture(tex1, coord), fade);\n"
+		"      color += scale * mix(texture2D(tex0, coord), texture2D(tex1, coord), fade);\n"
+
 		"    else\n"
-		"      color += scale * texture(tex0, coord);\n"
+
+		//by lusky
+//      "      color += scale * texture(tex0, coord);\n"
+		"      color += scale * texture2D(tex0, coord);\n"
+
 		"  }\n"
-		"  finalColor = color;\n"
+
+		//by lusky
+//		"  finalColor = color;\n"
+		"  gl_FragColor = color;\n"
+
 		"}\n";
-	
+
 	shader = Shader(vertexCode, fragmentCode);
 	scaleI = shader.Uniform("scale");
 	transformI = shader.Uniform("transform");
@@ -106,19 +131,20 @@ void SpriteShader::Init()
 	blurI = shader.Uniform("blur");
 	clipI = shader.Uniform("clip");
 	fadeI = shader.Uniform("fade");
-	
+
 	glUseProgram(shader.Object());
 	glUniform1i(shader.Uniform("tex0"), 0);
 	glUniform1i(shader.Uniform("tex1"), 1);
 	glUseProgram(0);
-	
+
 	// Generate the vertex data for drawing sprites.
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	
+	//by lusky
+	//glGenVertexArrays(1, &vao);
+	//glBindVertexArray(vao);
+
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	
+
 	GLfloat vertexData[] = {
 		-.5f, -.5f,
 		-.5f,  .5f,
@@ -126,13 +152,14 @@ void SpriteShader::Init()
 		 .5f,  .5f
 	};
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);
-	
+
 	glEnableVertexAttribArray(shader.Attrib("vert"));
 	glVertexAttribPointer(shader.Attrib("vert"), 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), nullptr);
-	
+
 	// unbind the VBO and VAO
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
+	//by lusky
+	//glBindVertexArray(0);
 }
 
 
@@ -141,11 +168,11 @@ void SpriteShader::Draw(const Sprite *sprite, const Point &position, float zoom,
 {
 	if(!sprite)
 		return;
-	
+
 	float pos[2] = {
 		static_cast<float>(position.X()), static_cast<float>(position.Y())};
 	float trans[4] = {sprite->Width() * zoom, 0.f, 0.f, sprite->Height() * zoom};
-	
+
 	Bind();
 	Add(sprite->Texture(), 0, pos, trans, swizzle, 1.f, 0.f);
 	Unbind();
@@ -156,9 +183,26 @@ void SpriteShader::Draw(const Sprite *sprite, const Point &position, float zoom,
 void SpriteShader::Bind()
 {
 	glUseProgram(shader.Object());
-	glBindVertexArray(vao);
+	//by lusky
+	//glBindVertexArray(vao);
+	glPushClientAttrib(GL_CLIENT_VERTEX_ARRAY_BIT);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+	/*GLfloat vertexData[] = {
+		-.5f, -.5f,
+		-.5f,  .5f,
+		 .5f, -.5f,
+		 .5f,  .5f
+	};
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);*/
+
+	glEnableVertexAttribArray(shader.Attrib("vert"));
+	glVertexAttribPointer(shader.Attrib("vert"), 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), nullptr);
+	//end by lusky
+
 	glActiveTexture(GL_TEXTURE0);
-	
+
 	GLfloat scale[2] = {2.f / Screen::Width(), -2.f / Screen::Height()};
 	glUniform2fv(scaleI, 1, scale);
 }
@@ -170,7 +214,7 @@ void SpriteShader::Add(uint32_t tex0, uint32_t tex1, const float position[2], co
 	glUniformMatrix2fv(transformI, 1, false, transform);
 	glUniform2fv(positionI, 1, position);
 	glBindTexture(GL_TEXTURE_2D, tex0);
-	
+
 	if(fade && tex1)
 	{
 		glActiveTexture(GL_TEXTURE1);
@@ -180,16 +224,16 @@ void SpriteShader::Add(uint32_t tex0, uint32_t tex1, const float position[2], co
 	}
 	else
 		fade = 0.f;
-	
+
 	// Set the color swizzle.
 	glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, SWIZZLE[swizzle]);
-	
+
 	// Set the clipping.
 	glUniform1f(clipI, 1.f - clip);
 	glUniform1f(fadeI, fade);
 	const float noBlur[2] = {0.f, 0.f};
 	glUniform2fv(blurI, 1, blur ? blur : noBlur);
-	
+
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
@@ -197,6 +241,9 @@ void SpriteShader::Add(uint32_t tex0, uint32_t tex1, const float position[2], co
 
 void SpriteShader::Unbind()
 {
-	glBindVertexArray(0);
+	//by lusky
+	//glBindVertexArray(0);
+	glPopClientAttrib();
+
 	glUseProgram(0);
 }
